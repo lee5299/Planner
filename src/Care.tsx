@@ -12,6 +12,7 @@ export function Care({store,date}:{store:Store;date:string}){
  const [cell,setCell]=useState<MandalaCell|null>(null);
  const [cellValue,setCellValue]=useState('');
  const [review,setReview]=useState<{date:string;text:string}|null>(null);
+ const [markingActionId,setMarkingActionId]=useState('');
  const version=careAt(state,date);
  const display=draft??version;
  const week=weekStart(date);
@@ -48,12 +49,14 @@ export function Care({store,date}:{store:Store;date:string}){
   if(await save({...state,care},'자기관리 목표 설정')){setDraft(null);setCell(null);setTab('today')}
  }
  async function mark(actionId:string,categoryId:string,status:'done'|null){
+  if(markingActionId)return;
+  setMarkingActionId(actionId);
   const old=state.logs.find(item=>item.date===date&&item.actionId===actionId);
   const category=version!.categories.find(item=>item.id===categoryId)!;
   const action=category.actions.find(item=>item.id===actionId)!;
   const logs=state.logs.filter(item=>item.id!==old?.id);
   if(status)logs.push({id:old?.id??uid(),date,actionId,categoryId,status,name:action.name,category:category.name,threshold:category.threshold});
-  await save({...state,logs},'자기관리 실천 기록');
+  try{await save({...state,logs},'자기관리 실천 기록')}finally{setMarkingActionId('')}
  }
 
  return <>
@@ -62,7 +65,7 @@ export function Care({store,date}:{store:Store;date:string}){
    <section className="care-banner"><div><span className="eyebrow">MY NORTH STAR</span><h2>{version?.goal||'나는 어떤 사람이 되고 싶나요?'}</h2><p>{version?'오늘의 작은 실천으로 나의 이상에 한 걸음 더.':'나를 위한 목표부터 천천히 정해보세요.'}</p><button className="text-button" onClick={openGoals}>만다라트에서 설정<ArrowUpRight size={15}/></button></div><Flower2 className="banner-flower" size={100} strokeWidth={.8}/></section>
    {yesterday?.text&&<div className="note">어제의 나에게서 <span>{yesterday.text}</span></div>}
    <div className="section-title"><div><h2>오늘의 작은 실천</h2><p>흰색 실천 칸을 누르면 민트색으로 기록되고, 다시 누르면 해제됩니다.</p></div><span>{new Date(date+'T12:00:00').toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'})}</span></div>
-   {!version?.categories.length?<Empty title="먼저 만다라트에 실천을 적어주세요" detail="핵심 목표 → 세부 목표 → 작은 실천 순서로 칸을 클릭해 입력할 수 있어요." action="만다라트 설정하기" onAction={openGoals}/>:<div className="today-mandala">{version.categories.map((category,index)=><section className="panel today-mandala-card" key={category.id}><header><span className="category-number">0{index+1}</span><h3>{category.name}</h3></header><div className="today-mandala-grid">{Array.from({length:9},(_,cellIndex)=>{if(cellIndex===4)return <div className="today-core" key="core">{category.name}</div>;const actionIndex=cellIndex<4?cellIndex:cellIndex-1;const action=category.actions[actionIndex];if(!action)return <button className="today-cell empty-cell" key={cellIndex} disabled>＋</button>;const log=state.logs.find(item=>item.date===date&&item.actionId===action.id);const checked=log?.status==='done';return <button className={'today-cell '+(checked?'done':'unmarked')} key={action.id} disabled={busy||date>today(state.timezone)} aria-pressed={checked} aria-label={action.name+', '+(checked?'했다. 클릭하면 기록 해제':'미기록. 클릭하면 했다')} onClick={()=>void mark(action.id,category.id,checked?null:'done')}><span>{action.name}</span><small>{checked?'✓ 했다':'눌러서 기록'}</small></button>})}</div>{!category.actions.length&&<button className="text-button" onClick={openGoals}><Plus size={14}/>작은 실천 입력하기</button>}</section>)}</div>}
+   {!version?.categories.length?<Empty title="먼저 만다라트에 실천을 적어주세요" detail="핵심 목표 → 세부 목표 → 작은 실천 순서로 칸을 클릭해 입력할 수 있어요." action="만다라트 설정하기" onAction={openGoals}/>:<div className="today-mandala">{version.categories.map((category,index)=><section className="panel today-mandala-card" key={category.id}><header><span className="category-number">0{index+1}</span><h3>{category.name}</h3></header><div className="today-mandala-grid">{Array.from({length:9},(_,cellIndex)=>{if(cellIndex===4)return <div className="today-core" key="core">{category.name}</div>;const actionIndex=cellIndex<4?cellIndex:cellIndex-1;const action=category.actions[actionIndex];if(!action)return <button className="today-cell empty-cell" key={cellIndex} disabled>＋</button>;const log=state.logs.find(item=>item.date===date&&item.actionId===action.id);const checked=log?.status==='done';const marking=markingActionId===action.id;return <button className={'today-cell '+(checked?'done':'unmarked')} key={action.id} disabled={marking||date>today(state.timezone)} aria-busy={marking} aria-pressed={checked} aria-label={action.name+', '+(checked?'했다. 클릭하면 기록 해제':'미기록. 클릭하면 했다')} onClick={()=>void mark(action.id,category.id,checked?null:'done')}><span>{action.name}</span><small>{marking?'저장 중…':checked?'✓ 했다':'눌러서 기록'}</small></button>})}</div>{!category.actions.length&&<button className="text-button" onClick={openGoals}><Plus size={14}/>작은 실천 입력하기</button>}</section>)}</div>}
    <div className="gentle"><Flower2 size={21}/><p>{careMessage(state,date,date)}</p></div>
    <section className="panel reflection"><BookOpen size={20}/><div><h3>내일의 나에게</h3><p>내일 바꿔볼 점이 있다면, 한 줄만 남겨요.</p><textarea aria-label="자기관리 내일 바꿀 점" placeholder="조금 더 편안한 내일을 위해…" value={review?.date===date?review.text:oldReview?.text??''} onChange={event=>setReview({date,text:event.target.value})}/><button disabled={busy} onClick={()=>void save({...state,reviews:[...state.reviews.filter(item=>item.id!==oldReview?.id),{id:oldReview?.id??uid(),date,area:'care',text:review?.date===date?review.text:oldReview?.text??'',closed:true}]},'자기관리 하루 마무리')}>하루 마무리</button></div></section>
   </>:tab==='goals'?<section className="panel"><div className="section-title"><div><h2>칸을 눌러 만다라트 만들기</h2><p>핵심 목표 → 세부 목표 → 작은 실천 순서로 한 칸씩 입력하세요.</p></div><span>{draft?.effective}부터 적용</span></div>
