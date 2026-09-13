@@ -16,9 +16,9 @@ function ProjectMenu({projects,selectedId,onSelect}:{projects:Project[];selected
  return <div className="project-menu-shell">
   {edges.left&&<button className="project-scroll-arrow previous" aria-label="이전 프로젝트 보기" onClick={()=>scrollBy(-260)}><ChevronLeft size={17}/></button>}
   <div className="project-menu" ref={menuRef} aria-label="프로젝트 바로가기" onScroll={updateEdges}
-   onPointerDown={event=>{if(event.button!==0)return;const element=menuRef.current;if(!element)return;drag.current={active:true,moved:false,startX:event.clientX,scrollLeft:element.scrollLeft};element.setPointerCapture(event.pointerId)}}
-   onPointerMove={event=>{if(!drag.current.active||!menuRef.current)return;const distance=event.clientX-drag.current.startX;if(Math.abs(distance)>4)drag.current.moved=true;menuRef.current.scrollLeft=drag.current.scrollLeft-distance}}
-   onPointerUp={event=>{drag.current.active=false;menuRef.current?.releasePointerCapture(event.pointerId)}}
+   onPointerDown={event=>{if(event.button!==0)return;const element=menuRef.current;if(!element)return;drag.current={active:true,moved:false,startX:event.clientX,scrollLeft:element.scrollLeft}}}
+   onPointerMove={event=>{const element=menuRef.current;if(!drag.current.active||!element)return;const distance=event.clientX-drag.current.startX;if(Math.abs(distance)>4&&!drag.current.moved){drag.current.moved=true;element.setPointerCapture(event.pointerId)}if(drag.current.moved)element.scrollLeft=drag.current.scrollLeft-distance}}
+   onPointerUp={event=>{drag.current.active=false;const element=menuRef.current;if(element?.hasPointerCapture(event.pointerId))element.releasePointerCapture(event.pointerId)}}
    onPointerCancel={()=>{drag.current.active=false}}
    onClickCapture={event=>{if(drag.current.moved){event.preventDefault();event.stopPropagation();drag.current.moved=false}}}>
    <button aria-pressed={!selectedId} onClick={()=>onSelect('')}>전체</button>{projects.map(project=><button key={project.id} aria-pressed={selectedId===project.id} onClick={()=>onSelect(project.id)}><i className={'project-dot '+project.color}/>{project.name}</button>)}
