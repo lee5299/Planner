@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pds-schema-v2",
+  "title": "Plan Do See workspace contract",
+  "version": 2,
+  "storage": {
+    "provider": "Supabase PostgreSQL",
+    "workspaceTable": "public.planner_workspaces",
+    "historyTable": "public.planner_revisions",
+    "workspaceId": "default",
+    "payloadColumn": "data",
+    "revisionColumn": "revision",
+    "saveFunction": "public.save_planner(bigint, uuid, text, jsonb)",
+    "concurrency": "optimistic revision equality",
+    "requestIdempotency": "planner_revisions(workspace_id, request_id) unique"
+  },
+  "dateAndUnits": {
+    "date": "YYYY-MM-DD calendar date",
+    "timestamp": "ISO 8601 timestamp",
+    "timezone": "IANA timezone name",
+    "duration": "minutes",
+    "progress": "0..1 internally; percentage only in project progress UI",
+    "weight": "integer 1..10",
+    "weekday": "0=Sunday through 6=Saturday"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timezone", "care", "logs", "projects", "stages", "tasks", "executions", "rules", "plans", "reviews"],
+  "properties": {
+    "timezone": {"type": "string", "description": "IANA timezone"},
+    "care": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "effective", "goal", "categories"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "effective": {"$ref": "#/$defs/date"},
+          "goal": {"$ref": "#/$defs/text"},
+          "categories": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/careCategory"}}
+        }
+      }
+    },
+    "logs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "date", "actionId", "categoryId", "status", "name", "category", "threshold"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "date": {"$ref": "#/$defs/date"},
+          "actionId": {"$ref": "#/$defs/id"},
+          "categoryId": {"$ref": "#/$defs/id"},
+          "status": {"enum": ["done", "missed"]},
+          "name": {"$ref": "#/$defs/text"},
+          "category": {"$ref": "#/$defs/text"},
+          "threshold": {"type": "integer", "minimum": 1, "maximum": 8}
+        }
+      },
+      "description": "Unique by date + actionId"
+    },
+    "projects": {"type": "array", "items": {"$ref": "#/$defs/project"}},
+    "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
+    "tasks": {"type": "array", "items": {"$ref": "#/$defs/task"}},
+    "executions": {"type": "array", "items": {"$ref": "#/$defs/execution"}},
+    "rules": {"type": "array", "items": {"$ref": "#/$defs/rule"}},
+    "plans": {"type": "array", "items": {"$ref": "#/$defs/plan"}},
+    "reviews": {"type": "array", "items": {"$ref": "#/$defs/review"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 100},
+    "text": {"type": "string", "maxLength": 4000},
+    "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "optionalDate": {"oneOf": [{"$ref": "#/$defs/date"}, {"const": ""}]},
+    "nonnegativeNumber": {"type": "number", "minimum": 0, "maximum": 10000000},
+    "priority": {"enum": ["high", "medium", "low"]},
+    "projectColor": {"enum": ["apricot", "sky", "lavender", "rose", "lemon", "mint", "blue", "coral"]},
+    "weekdays": {"type": "array", "maxItems": 7, "items": {"type": "integer", "minimum": 0, "maximum": 6}},
+    "careCategory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "threshold", "actions"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 100},
+        "threshold": {"type": "integer", "minimum": 1, "maximum": 8},
+        "actions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name"],
+            "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 150}}
+          }
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "goal", "success", "start", "end", "priority", "color", "estimate", "weekdays", "archived"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 150},
+        "goal": {"$ref": "#/$defs/text"},
+        "success": {"$ref": "#/$defs/text"},
+        "start": {"$ref": "#/$defs/optionalDate"},
+        "end": {"$ref": "#/$defs/optionalDate"},
+        "priority": {"$ref": "#/$defs/priority"},
+        "color": {"$ref": "#/$defs/projectColor"},
+        "estimate": {"$ref": "#/$defs/nonnegativeNumber"},
+        "weekdays": {"$ref": "#/$defs/weekdays"},
+        "archived": {"type": "boolean"}
+      },
+      "description": "When both dates exist, end must be on or after start"
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "name", "weight", "order", "manual", "archived"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "projectId": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 150},
+        "weight": {"oneOf": [{"type": "integer", "minimum": 1, "maximum": 10}, {"type": "null"}]},
+        "order": {"type": "integer", "minimum": 0},
+        "manual": {"oneOf": [{"type": "number", "minimum": 0, "maximum": 100}, {"type": "null"}]},
+        "archived": {"type": "boolean"}
+      },
+      "description": "projectId references projects.id"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "stageId", "name", "startDate", "date", "originalDate", "priority", "tags", "estimate", "status", "reason", "note", "unplanned", "archived", "completedAt", "createdAt", "ruleId"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "projectId": {"type": "string", "maxLength": 100},
+        "stageId": {"type": "string", "maxLength": 100},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "startDate": {"$ref": "#/$defs/optionalDate"},
+        "date": {"$ref": "#/$defs/optionalDate"},
+        "originalDate": {"$ref": "#/$defs/optionalDate"},
+        "priority": {"$ref": "#/$defs/priority"},
+        "tags": {"$ref": "#/$defs/text"},
+        "estimate": {"$ref": "#/$defs/nonnegativeNumber"},
+        "status": {"enum": ["todo", "doing", "done", "blocked", "cancelled"]},
+        "reason": {"$ref": "#/$defs/text"},
+        "note": {"$ref": "#/$defs/text"},
+        "unplanned": {"type": "boolean"},
+        "archived": {"type": "boolean"},
+        "completedAt": {"type": "string"},
+        "createdAt": {"type": "string"},
+        "ruleId": {"type": "string", "maxLength": 100}
+      },
+      "description": "Non-empty projectId references projects.id; non-empty stageId references a stage in the same project; date must not precede startDate"
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "taskId", "start", "end", "minutes", "reason", "date", "createdAt"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "taskId": {"$ref": "#/$defs/id"},
+        "start": {"type": "string"},
+        "end": {"type": "string"},
+        "minutes": {"$ref": "#/$defs/nonnegativeNumber"},
+        "reason": {"$ref": "#/$defs/text"},
+        "date": {"$ref": "#/$defs/date"},
+        "createdAt": {"type": "string"}
+      },
+      "description": "taskId references tasks.id; non-empty timestamps use ISO 8601; end must not precede start; minutes are derived when both timestamps exist"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "stageId", "name", "target", "weekdays", "start", "end", "archived"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "projectId": {"type": "string"},
+        "stageId": {"type": "string"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 150},
+        "target": {"type": "integer", "minimum": 1, "maximum": 7},
+        "weekdays": {"$ref": "#/$defs/weekdays"},
+        "start": {"$ref": "#/$defs/date"},
+        "end": {"$ref": "#/$defs/optionalDate"},
+        "archived": {"type": "boolean"}
+      },
+      "description": "Non-empty projectId and stageId reference their parent records; end must not precede start"
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "createdAt", "allocations"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "projectId": {"$ref": "#/$defs/id"},
+        "createdAt": {"type": "string"},
+        "allocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stageId", "start", "end", "days", "baseProgress"],
+            "properties": {
+              "stageId": {"$ref": "#/$defs/id"},
+              "start": {"$ref": "#/$defs/date"},
+              "end": {"$ref": "#/$defs/date"},
+              "days": {"$ref": "#/$defs/nonnegativeNumber"},
+              "baseProgress": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          }
+        }
+      },
+      "description": "projectId references projects.id and allocation stageId belongs to the same project; saved plans are immutable"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "date", "area", "text", "closed"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "date": {"$ref": "#/$defs/date"},
+        "area": {"enum": ["care", "projects"]},
+        "text": {"$ref": "#/$defs/text"},
+        "closed": {"type": "boolean"}
+      },
+      "description": "Unique by area + date"
+    }
+  }
+}
