@@ -4,7 +4,8 @@ export function prepareSave(previous:State,input:unknown,now=new Date()):State{
  const next=stateSchema.parse(input);const stamp=now.toISOString();
  for(const key of ['care','logs','projects','stages','tasks','executions','rules','plans','reviews'] as const){const ids=next[key].map(x=>x.id);if(new Set(ids).size!==ids.length)throw Error('중복 ID입니다');}
  for(const key of ['projects','stages','tasks','executions','rules','plans','care'] as const){for(const old of previous[key]){if(!next[key].some(x=>x.id===old.id))throw Error('기존 기록은 삭제 대신 보관해 주세요');}}
- for(const old of previous.care){if(JSON.stringify(next.care.find(x=>x.id===old.id))!==JSON.stringify(old))throw Error('과거 목표는 새 버전으로 수정해 주세요');}
+ const currentDate=today(next.timezone,now);
+ for(const old of previous.care){if(old.effective<currentDate&&JSON.stringify(next.care.find(x=>x.id===old.id))!==JSON.stringify(old))throw Error('과거 목표는 새 버전으로 수정해 주세요');}
  for(const old of previous.plans){if(JSON.stringify(next.plans.find(x=>x.id===old.id))!==JSON.stringify(old))throw Error('과거 계획을 덮어쓸 수 없습니다');}
  const dates=next.care.map(x=>x.effective);if(new Set(dates).size!==dates.length)throw Error('같은 날짜의 목표 설정이 이미 있습니다. 다음 날짜를 선택해 주세요');
  const logKeys=next.logs.map(l=>l.date+':'+l.actionId);if(new Set(logKeys).size!==logKeys.length)throw Error('같은 날 같은 실천 기록은 하나만 저장할 수 있습니다');
