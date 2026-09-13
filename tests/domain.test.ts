@@ -1,7 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {emptyState,allocation,projectMetrics,aggregate,weekStart,careMessage,careAt,type Project,type Task} from '../shared/model.ts';
 import {prepareSave} from '../server/domain.ts';
-const project:Project={id:'p',name:'실제 계획',goal:'',success:'',start:'2026-09-01',end:'2026-09-10',priority:'medium',estimate:0,weekdays:[0,1,2,3,4,5,6],archived:false};
+const project:Project={id:'p',name:'실제 계획',goal:'',success:'',start:'2026-09-01',end:'2026-09-10',priority:'medium',color:'sky',estimate:0,weekdays:[0,1,2,3,4,5,6],archived:false};
 function task(id:string):Task{return {id,name:id,projectId:'p',stageId:'',date:'2026-09-01',originalDate:'2026-09-01',priority:'medium',tags:'',estimate:30,status:'todo',reason:'',note:'',unplanned:false,archived:false,createdAt:'',completedAt:'',ruleId:''}}
 test('가중치 1·1·3·5: 10일 배분, 20% 완료 후 가용 5일은 촉박',()=>{const s=emptyState();s.projects=[project];s.stages=[1,1,3,5].map((weight,i)=>({id:String(i),name:String(i),projectId:'p',weight,order:i,manual:i<2?100:0,archived:false}));assert.deepEqual(allocation(s,project).map(a=>a.days),[1,1,3,5]);const m=projectMetrics(s,project,'2026-09-06');assert.equal(m.progress,.2);assert.equal(m.remaining,8);assert.equal(m.available,5);assert.equal(m.status,'촉박')});
 test('미정·빈 단계·작업 요일 없음과 날짜 경계',()=>{const s=emptyState();assert.equal(projectMetrics(s,project,'2026-09-01').status,'판단 불가');assert.deepEqual(allocation(s,{...project,weekdays:[]}),[]);assert.equal(weekStart('2026-09-13'),'2026-09-07')});
