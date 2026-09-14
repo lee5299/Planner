@@ -33,6 +33,9 @@ temp/
 *.sqlite3
 *.pem
 *.key
+backups/
+*.private.json
+*.backup.json
 
 # Editors and operating systems
 .idea/

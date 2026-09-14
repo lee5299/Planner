@@ -24,11 +24,12 @@ pnpm dev
 ```dotenv
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+VITE_TURNSTILE_SITE_KEY=
 ```
 
-Supabase SQL Editor에서 [`supabase/migrations/202609120001_planner.sql`](supabase/migrations/202609120001_planner.sql)을 실행합니다. `.env`와 실제 키는 Git에 올리지 않습니다.
+과제 7 전환 전에는 [`docs/T07_AUTH.md`](docs/T07_AUTH.md)의 백업·적용 순서를 먼저 확인합니다. 소유권과 로그인 공격 방어 SQL은 준비되어 있지만 아직 실행하지 않은 상태입니다. `.env`와 실제 키는 Git에 올리지 않으며 Turnstile 비밀키는 Supabase Dashboard에만 둡니다.
 
-현재 과제 범위에는 로그인이 없습니다. 링크를 아는 사람은 같은 `default` 작업 공간을 읽고 수정할 수 있으므로 공개해도 괜찮은 내용만 입력해야 합니다.
+현재 소스의 첫 화면은 로그인 화면이며 로그인한 사용자의 RPC만 호출합니다. 실제 계정별 보호는 과제 7 마이그레이션과 Supabase 비밀번호 훅·Turnstile 설정을 적용한 뒤 활성화됩니다.
 
 ## 검증
 
@@ -37,4 +38,4 @@ pnpm run check
 pnpm run build
 ```
 
-`check`는 TypeScript 검사와 핵심 계산·저장 테스트를 실행합니다. `build`는 Vite 클라이언트와 정적 제공용 서버 번들을 생성합니다.
+`check`는 중앙 보안 설정과 생성 SQL의 일치, TypeScript, 핵심 계산·저장 테스트를 검사합니다. `build`는 Vite 클라이언트와 정적 제공용 서버 번들을 생성합니다. 보안 설정 변경 뒤에는 `pnpm security:sync`로 생성 SQL을 갱신합니다.

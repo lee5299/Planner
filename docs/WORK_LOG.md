@@ -2,15 +2,15 @@
 
 ## 현재 상태
 
-- 단계: 주요 기능과 Supabase 연결·배포를 완료하고 제출 전 통합 검증과 문서 정합성을 점검 중.
+- 단계: 과제 7의 1단계 인증·소유권 설계와 2단계 인증 UI·보호 코드를 완료. 3단계 중 기존 자료 백업과 Turnstile 생성·Supabase CAPTCHA 활성화를 완료했으며 SQL·비밀번호 훅 적용 전.
 - 확인한 프로젝트 루트: React UI, 정적 제공용 Express 서버, 공유 도메인 모델, Supabase 마이그레이션, 데이터 계약과 테스트가 존재함.
-- 기술 스택/실행 명령/테스트 명령: React 19, TypeScript, Vite, Express, Supabase JS. `pnpm dev`, `pnpm run check`, `pnpm run build`.
-- DB/마이그레이션/환경변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`로 브라우저 Supabase 연결 완료. 공개 RLS SQL 실행과 실제 저장·복원·변경 이력 확인 완료.
-- 브랜치/커밋: main, origin/main 연결. 마지막 확인 원격 커밋 `7fb39c5`; 현재 제출 문서·탭 초기화·계약 파일 변경은 커밋 전.
-- 제품 검증: `pnpm run check`의 타입 검사와 테스트 11개 통과, `pnpm run build` 통과. 공개 배포와 저장소의 비로그인 접근, 실제 프로젝트와 업무 23개, 왼쪽 메뉴 기본 탭 이동 확인.
-- 문서: 루트 README, PRD, DESIGN, 협업 README, CHECKLIST, WORK_LOG와 `contracts/pds-schema-v2.json` 구성.
-- 다음 작업: 배포 앱에서 실행 기록 3개와 돌아보기 집계·다음 계획 연결을 최종 확인하고, 새 커밋 배포 후 시크릿 창에서 최종 버전을 재검증.
-- 미완료 증거: 배포 UI에서 실행 기록 3개와 모든 집계가 0이 아닌 상태, 스크립트 문자열 이스케이프, 전체 내보내기 파일은 아직 확인되지 않음.
+- 기술 스택/실행 명령/테스트 명령: React 19, TypeScript, Vite, Express, Supabase JS. `pnpm dev`, `pnpm run security:sync`, `pnpm run security:check`, `pnpm run check`, `pnpm run build`.
+- DB/마이그레이션/환경변수: 과제 6 공개 RLS와 실제 저장·복원·변경 이력은 확인 완료. 과제 7 사용자 소유권·RLS·RPC 전환안과 생성된 로그인 실패 잠금 마이그레이션을 준비했으나 사용자 요청에 따라 Supabase에는 실행하지 않음. Turnstile 공개 사이트 키는 Git에서 제외된 로컬 `.env`에 두고 비밀키는 Supabase Dashboard에만 저장했으며 CAPTCHA는 Turnstile 제공자로 활성화함. 환경변수 이름은 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_TURNSTILE_SITE_KEY`이며 실제 값은 기록하지 않음.
+- 브랜치/커밋: `main`, `origin/main` 연결. 현재 HEAD `8bcd39e`; 과제 7 1·2단계 파일은 커밋 전.
+- 제품 검증: 2026-09-14 `pnpm run check`의 보안 설정-SQL 일치 검사, 타입 검사, 테스트 12개 통과 및 `pnpm run build` 통과. 로컬 브라우저에서 비로그인 첫 화면·회원가입 전환·Turnstile 키 누락 시 요청 차단·콘솔 오류 없음을 확인. Supabase Dashboard 저장 성공 알림과 새로고침 뒤 CAPTCHA 활성화·Turnstile 제공자 유지도 확인. 실제 가입·세션·계정 격리·실패 잠금은 SQL·비밀번호 훅 적용 전이므로 검증 전.
+- 문서: 기본 문서 외에 과제 7 전용 `docs/T07_AUTH.md`, `docs/T07_CHECKLIST.md`를 추가하고 PRD에 인증 확장 범위를 연결함.
+- 다음 작업: 배포 환경에 Turnstile 공개 사이트 키를 설정하고 소유자 계정을 준비. 이후 별도 사용자 확인을 거쳐 두 SQL과 비밀번호 검증 훅을 적용하고 Auth 요청 제한을 확인.
+- 미완료 증거: 과제 7 계정 생성·로그인·로그아웃, 세션 폐기, 계정 간 격리, 기존 `default` 자료 이전은 실제 Supabase 적용 전이므로 미검증. 과제 6의 실행 기록·돌아보기·전체 내보내기 관련 기존 미완료 증거도 유지.
 
 ## 누적 이력
 
@@ -115,9 +115,37 @@
 - 제출 전 정합성 점검: 루트 README와 `contracts/pds-schema-v2.json`을 추가하고 Supabase 표·저장 함수·상태 필드·관계·날짜·단위를 문서화. JSON 구문 검증, 비밀 패턴·추적 환경 파일 점검, 테스트 11개와 빌드 통과. 배포 앱에서 실제 업무 23개를 확인했으나 실행 기록 3개와 돌아보기 최종 증거는 추가 확인이 필요함.
 - 검증: 기간 내 선택 요일 생성과 잘못된 종료일 차단 테스트를 추가해 전체 11개 테스트 통과. 브라우저에서 슬라이드 이동, 캘린더 색상 클래스, 반복 목표의 시작일·종료일·저장 버튼을 확인.
 
-# 2026-09-13 — 프로젝트 일정 상태 기준 조정
+### [2026-09-13 시각 미기록 Asia/Seoul] - 프로젝트 일정 상태 기준 조정
 
 - 남은 작업량과 남은 날짜만 비교하던 상태 계산을 계획상 기대 진척도와 실제 가중 진척도의 비교로 변경했다.
 - 오늘 예정된 작업은 오늘 시작 시점에는 아직 지연으로 보지 않는다.
 - 실제 진척도가 기대치 이상이면 `순조로움`, 10%p 이내 지연이면 `주의`, 그보다 더 밀리면 `촉박`으로 표시한다.
 - 일정 재조정 이력이 있으면 재조정 당시 진척도를 새 계획의 기준점으로 사용한다.
+
+### [2026-09-14 00:11 Asia/Seoul] - 과제 7 1단계 마감 정리
+- 요청 범위/담당: 과제 7 1단계의 남은 문서·설계 정리를 이어서 수행하고 Supabase SQL 없이 검사와 빌드 확인 / Codex.
+- 변경 파일과 핵심 내용: 과제 7 범위를 `docs/PRD.md`에 연결하고 장 번호 중복을 수정. `docs/T07_AUTH.md`, `docs/T07_CHECKLIST.md`, `supabase/migrations/202609130002_auth_ownership.sql`의 인증·소유권 설계와 미실행 상태를 대조하고 저장 RPC의 null·음수 revision 입력 검증을 보강. `docs/README.md`에 과제 7 보조 문서 읽기 순서를 추가하고 `.gitignore`에 개인 백업 파일 패턴을 추가.
+- 검증: Supabase SQL 및 외부 DB 요청은 실행하지 않음. `pnpm list @supabase/supabase-js --depth 0`에서 2.116.0 확인. `pnpm run check` 타입 검사와 테스트 12개 통과, `pnpm run build` 통과, `git diff --check` 오류 없음.
+- 현재 상태와 다음 작업: 1단계 완료. 2단계에서 SQL 미실행 상태를 유지하며 인증 UI·화면 보호·사용자별 RPC 호출 코드를 구현.
+- 결정 및 제약: 실제 계정·세션·격리·자료 이전 증거가 필요한 T07 항목은 완료 처리하지 않음. 비밀번호·토큰·비밀키와 Supabase 환경변수 값은 기록하지 않음.
+
+### [2026-09-14 19:40 Asia/Seoul] - 로그인 반복 공격 방어 설계 추가
+- 요청 범위/담당: 전달 IP 헤더 위조 방어, 5회 실패 시 5분 잠금, 보안 설정 단일 파일 관리 추가 / Codex.
+- 변경 파일과 핵심 내용: `shared/securityConfig.ts`를 설정 원본으로 추가하고 실패 5회·관찰 창 5분·잠금 5분·전달 헤더 비신뢰·Turnstile 필수·공통 오류 문구를 모음. `scripts/securityMigration.ts`가 Supabase 비밀번호 검증 훅 SQL을 생성하며 `server/index.ts`는 Express `trust proxy`를 비활성화. PRD·인증 설계·체크리스트와 환경변수 이름을 동기화.
+- 검증: `pnpm run security:sync`로 `202609140003_auth_abuse_protection.sql` 생성, `pnpm run check`에서 설정-SQL 일치 검사·타입 검사·테스트 12개 통과, `pnpm run build` 통과, `git diff --check` 오류 없음. Supabase SQL과 외부 인증 요청은 실행하지 않음.
+- 현재 상태와 다음 작업: 서버 측 잠금과 헤더 비신뢰 소스 준비 완료. 2단계에서 Turnstile 포함 로그인 UI와 공통 오류 처리를 구현한 뒤, 3단계에서 SQL·훅·Dashboard 설정을 적용하고 4단계에서 실제 우회 시도를 검증.
+- 결정 및 제약: 계정 기준 잠금은 알려진 이메일에 대한 고의 잠금 위험이 있어 CAPTCHA와 Supabase IP 제한을 함께 사용한다. 훅·CAPTCHA·429 동작은 실제 적용 전이므로 완료로 표시하지 않음.
+
+### [2026-09-14 20:20 Asia/Seoul] - 과제 7 2단계 인증 UI와 보호 코드
+- 요청 범위/담당: 앞서 합의한 로그인 보안 흐름 계속 진행 / Codex.
+- 변경 파일과 핵심 내용: `src/supabase.ts`, `src/auth.ts`에 지속·자동 갱신 세션과 가입·로그인·로그아웃 추가. `src/AuthScreen.tsx`, `src/Turnstile.tsx`에 인증 첫 화면·12자 가입 기준·Turnstile·공통 오류·중복 요청 차단 구현. `src/App.tsx`에서 미인증 자료 화면을 차단하고 로그아웃 시 메모리 상태를 초기화. `src/data.ts`의 `default` 직접 조회를 사용자 범위 RPC 세 개로 교체.
+- 검증: `pnpm run check`의 보안 설정-SQL 일치·타입 검사·테스트 12개 통과, `pnpm run build` 통과. 로컬 인앱 브라우저에서 저장 세션 없는 루트가 로그인 화면만 표시하고, 회원가입 탭·12자 안내·Turnstile 키 누락 차단이 보이며 콘솔 경고·오류가 없음을 확인.
+- 현재 상태와 다음 작업: 2단계 코드는 완료. 실제 가입·로그인·로그아웃·CAPTCHA·사용자 데이터 로드는 3단계 Supabase 적용 후 검증.
+- 결정 및 제약: CAPTCHA를 우회하는 개발용 경로를 두지 않음. 로컬 `.env`에 `VITE_TURNSTILE_SITE_KEY`가 없어 인증 버튼이 안전하게 비활성화된 상태로만 확인했으며 SQL·외부 인증 요청은 실행하지 않음.
+
+### [2026-09-14 20:57 Asia/Seoul] - Turnstile 생성과 Supabase CAPTCHA 활성화
+- 요청 범위/담당: Cloudflare Turnstile 위젯을 만들고 승인된 비밀키를 Supabase Auth CAPTCHA 설정에 저장 / Codex.
+- 변경 파일과 핵심 내용: 배포 호스트용 Turnstile 위젯을 생성하고 공개 사이트 키를 Git에서 제외된 로컬 `.env`에 반영. 비밀키는 소스·문서·환경 파일에 남기지 않고 Supabase Dashboard의 Attack Protection에만 입력해 제공자를 `Turnstile by Cloudflare`로 선택하고 CAPTCHA를 활성화.
+- 검증: Supabase의 `Successfully updated settings` 알림을 확인하고 페이지 새로고침 뒤에도 CAPTCHA 활성화와 Turnstile 제공자가 유지됨을 확인. `.env`의 Git 제외 상태를 확인했으며 `pnpm run check` 테스트 12개와 `pnpm run build`가 통과.
+- 현재 상태와 다음 작업: Turnstile 서비스와 Supabase CAPTCHA 연결은 완료. 배포 환경 공개 사이트 키 설정, 실제 로그인·가입 토큰 검증, 사용자 소유권 SQL과 비밀번호 훅 적용·시험은 남음.
+- 결정 및 제약: 사용자의 기존 지시대로 Supabase SQL은 실행하지 않음. Turnstile 비밀키 원문은 어디에도 기록하거나 출력하지 않음.

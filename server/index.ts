@@ -1,11 +1,13 @@
 import express from 'express';
 import {resolve} from 'node:path';
+import {authSecurityConfig} from '../shared/securityConfig.ts';
 
 const app=express();
 const port=Number(process.env.PORT)||3000;
 const production=process.env.NODE_ENV==='production'||process.argv[1]?.endsWith('server.mjs');
 const host=process.env.HOST||(production?'0.0.0.0':'127.0.0.1');
 app.disable('x-powered-by');
+app.set('trust proxy',authSecurityConfig.trustForwardedFor);
 
 if(production){
  app.use(express.static(resolve('dist/client')));
