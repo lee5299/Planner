@@ -27,9 +27,9 @@ VITE_SUPABASE_ANON_KEY=
 VITE_TURNSTILE_SITE_KEY=
 ```
 
-과제 7 전환의 소유권·로그인 공격 방어 SQL은 Supabase에 적용했다. 기존 `default` 작업공간은 로그인 계정 소유로 이전되었으며, 이전 뒤 검증값은 미소유 작업공간 0개·현재 revision 212·revision 이력 212개다. 비밀번호 실패 잠금을 실제로 사용하려면 Supabase Dashboard에서 Password verification hook을 연결한 뒤 실제 로그인 시나리오를 검증해야 한다. `.env`와 실제 키는 Git에 올리지 않으며 Turnstile 비밀키는 Supabase Dashboard에만 둡니다.
+과제 7 전환의 소유권·로그인 공격 방어 SQL은 Supabase에 적용했다. 기존 `default` 작업공간은 로그인 계정 소유로 이전되었으며, 이전 뒤 검증값은 미소유 작업공간 0개·현재 revision 212·revision 이력 212개다. Free 플랜에서는 Password verification hook을 연결할 수 없으므로 계정별 5회 실패 잠금은 활성화하지 않고, Turnstile CAPTCHA와 Supabase 기본 요청 제한을 사용한다. `.env`와 실제 키는 Git에 올리지 않으며 Turnstile 비밀키는 Supabase Dashboard에만 둡니다.
 
-현재 소스의 첫 화면은 로그인 화면이며 로그인한 사용자의 RPC만 호출합니다. 사용자별 데이터 소유권 보호와 Turnstile 설정은 적용됐고, 비밀번호 실패 잠금은 Supabase 비밀번호 훅 연결 및 실제 동작 검증이 남아 있습니다.
+현재 소스의 첫 화면은 로그인 화면이며 로그인한 사용자의 RPC만 호출합니다. 사용자별 데이터 소유권 보호와 Turnstile 설정은 적용됐고, 계정별 비밀번호 실패 잠금은 현재 Free 플랜 범위에서 사용하지 않습니다.
 
 ## 검증
 

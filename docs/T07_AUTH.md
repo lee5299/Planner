@@ -2,11 +2,11 @@
 
 작성일: 2026-09-13  
 최종 정리: 2026-09-15  
-현재 상태: **인증 UI·소유권/RLS SQL·로그인 실패 제한 SQL·Turnstile 설정 적용 완료 · Password verification hook 연결 및 실제 잠금 시나리오 검증 대기**
+현재 상태: **인증 UI·소유권/RLS SQL·Turnstile 설정 적용 완료 · Free 플랜 제약으로 계정별 비밀번호 실패 잠금은 사용하지 않음**
 
 이 문서는 과제 6의 공개 단일 작업공간을 과제 7의 사용자별 비공개 작업공간으로 옮기는 기준이다. 실제 비밀번호·토큰·비밀키·이메일·사용자 UUID를 이 문서나 Git에 기록하지 않는다.
 
-2026-09-15 적용 기록: 두 Supabase 마이그레이션을 적용하고, 백업 기준으로 기존 `default` 작업공간을 로그인한 계정의 소유로 이전했다. 확인값은 미소유 작업공간 0개, 현재 revision 212, revision 이력 212개다. 실제 사용자 UUID와 이메일은 기록하지 않는다.
+2026-09-15 적용 기록: 두 Supabase 마이그레이션을 적용하고, 백업 기준으로 기존 `default` 작업공간을 로그인한 계정의 소유로 이전했다. 확인값은 미소유 작업공간 0개, 현재 revision 212, revision 이력 212개다. 실제 사용자 UUID와 이메일은 기록하지 않는다. Password verification hook은 Free 플랜에서 연결할 수 없어 계정별 실패 잠금은 활성화하지 않는다.
 
 ## 이번 단계의 결정
 
@@ -53,11 +53,11 @@ Supabase의 일반 로그아웃은 refresh token을 폐기하지만 이미 발�
 
 ## 로그인 반복 공격과 전달 헤더 방어
 
-보안 설정의 단일 원본은 `shared/securityConfig.ts`다. 현재 값은 5분 동안 비밀번호 실패 5회, 계정 잠금 5분, 전달 IP 헤더 비신뢰, Cloudflare Turnstile 필수다. `pnpm run security:sync`가 이 값으로 `202609140003_auth_abuse_protection.sql`을 생성하고, `pnpm run security:check`가 수동 수정이나 설정 불일치를 차단한다. CAPTCHA 비밀키는 파일에 넣지 않고 Supabase Dashboard에만 저장하며 브라우저에는 `VITE_TURNSTILE_SITE_KEY` 공개 사이트 키만 둔다.
+보안 설정의 단일 원본은 `shared/securityConfig.ts`다. 여기에는 향후 유료 플랜용 비밀번호 실패 잠금 설정과 전달 IP 헤더 비신뢰, Cloudflare Turnstile 필수가 함께 있다. Free 플랜에서는 Password verification hook을 연결할 수 없어 실패 잠금 설정은 실행 경로에 연결하지 않는다. CAPTCHA 비밀키는 파일에 넣지 않고 Supabase Dashboard에만 저장하며 브라우저에는 `VITE_TURNSTILE_SITE_KEY` 공개 사이트 키만 둔다.
 
-비밀번호 검증 훅은 Supabase Auth가 제공한 `user_id`만 잠금 키로 사용한다. 5분 창 안의 다섯 번째 실패부터 올바른 비밀번호도 5분 동안 HTTP 429로 거절하고, 잠금 시간이 지난 뒤 정상 로그인하면 실패 기록을 삭제한다. `X-Forwarded-For`, `Forwarded`, 임의 본문 IP는 읽지 않으므로 공격자가 헤더를 바꿔 계정 잠금을 우회할 수 없다. Express도 `trust proxy=false`를 중앙 설정에서 적용하며 현재 인증 요청은 Express를 거치지 않고 Supabase로 직접 전송된다.
+비밀번호 검증 훅 SQL은 유료 플랜 전환 시 사용할 준비 상태로 남겨 둔다. 이 훅은 Supabase Auth가 제공한 `user_id`만 잠금 키로 쓰며 `X-Forwarded-For`, `Forwarded`, 임의 본문 IP를 읽지 않는다. 현재 인증 요청은 Express를 거치지 않고 Supabase로 직접 전송되며, Free 플랜의 실제 로그인 보호는 Turnstile CAPTCHA와 Supabase 기본 요청 제한이다.
 
-계정 단위 잠금은 공격자가 알고 있는 이메일을 일부러 잠그는 서비스 거부 공격을 만들 수 있다. 이를 줄이기 위해 Turnstile과 Supabase Auth의 IP 기반 요청 제한을 함께 켜고, UI는 존재하지 않는 이메일·비밀번호 오류·잠금 여부를 모두 같은 문구로 표시한다. 훅과 CAPTCHA는 SQL 적용 및 Dashboard 활성화 후 실제 5회 실패, 잠금 중 정상 비밀번호, 5분 경과, 위조 전달 헤더 요청으로 검증한다.
+계정 단위 잠금은 공격자가 알고 있는 이메일을 일부러 잠그는 서비스 거부 공격을 만들 수 있다. 현재는 이 기능을 활성화하지 않고 Turnstile과 Supabase Auth의 IP 기반 요청 제한을 함께 사용한다. UI는 존재하지 않는 이메일과 비밀번호 오류를 같은 문구로 표시한다. CAPTCHA는 실제 가입·로그인에서 확인했으며, 유료 플랜 전환 뒤에만 훅 기반 잠금을 검증한다.
 
 ## 백업과 전환 순서
 

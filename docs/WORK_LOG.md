@@ -154,3 +154,7 @@
 - 적용: 소유권/RLS 마이그레이션과 로그인 실패 제한 마이그레이션을 Supabase SQL Editor에서 적용했다. 기존 `default` 작업공간을 로그인 계정 소유로 이전하고 `owner_id`를 필수로 전환했다. 실제 사용자 UUID·이메일·키는 기록하지 않는다.
 - 검증: 로그인 실패 제한 테이블·비밀번호 검증 함수·Auth 관리자 권한이 모두 존재함을 확인했다. 자료 이전 뒤 미소유 작업공간 0개, 작업공간 revision 212, revision 이력 212개를 확인했다. 적용 전 개인 백업은 `backups/`의 Git 제외 파일로 보관한다.
 - 다음 작업: Supabase Dashboard에서 Password verification hook을 연결하고, 실제 5회 실패·잠금 중 정상 비밀번호·5분 후 재로그인·계정 두 개 격리를 검증한다.
+
+### [2026-09-15] - Free 플랜 보안 범위 정정 및 실제 동작 확인
+- 확인: 배포 앱에서 로그인 뒤 기존 기록 표시, 기록 수정 뒤 새로고침 보존, 로그아웃 뒤 기록 비공개를 사용자가 확인했다.
+- 결정: Supabase Free 플랜은 Password verification hook을 제공하지 않아 계정별 5회 실패·5분 잠금을 활성화하지 않는다. 화면과 문서를 Turnstile CAPTCHA 및 Supabase 기본 요청 제한 기준으로 정정한다.

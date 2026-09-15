@@ -276,8 +276,7 @@
 - 브라우저에는 publishable/anon 키만 두고 service role 키, JWT 서명 비밀, 비밀번호를 포함하지 않는다.
 - 과제 6의 `default` 작업공간은 백업 뒤 사용자가 만든 소유자 계정으로 한 번만 이전한다.
 - 로그아웃과 비밀번호 변경 뒤 이전 access token도 자료 RPC를 통과하지 않도록 현재 `auth.sessions` 존재 여부를 추가 확인한다.
-- 비밀번호를 5분 안에 5회 잘못 입력하면 해당 계정의 로그인을 5분 동안 잠근다. 잠금 판단은 Supabase Auth가 확인한 사용자 ID를 기준으로 하며 `X-Forwarded-For` 등 클라이언트가 보낼 수 있는 IP 헤더를 신뢰하지 않는다.
-- 공개 인증 화면은 Cloudflare Turnstile을 사용하고 Supabase Auth의 서버 측 요청 제한을 함께 적용한다. 존재하지 않는 이메일, 잘못된 비밀번호, 잠금 상태는 계정 존재 여부를 드러내지 않는 공통 문구로 안내한다.
+- 공개 인증 화면은 Cloudflare Turnstile을 사용하고 Supabase Auth의 서버 측 요청 제한을 함께 적용한다. Free 플랜에서는 Password verification hook을 사용할 수 없으므로 계정별 비밀번호 실패 횟수 잠금은 제공하지 않는다. 존재하지 않는 이메일과 잘못된 비밀번호는 계정 존재 여부를 드러내지 않는 공통 문구로 안내한다.
 - 보안 수치와 브라우저·프록시 정책의 단일 원본은 `shared/securityConfig.ts`로 관리하며 생성 SQL과의 일치를 `pnpm run security:check`로 검사한다.
 - 실제 DB 적용 순서와 사용자별 RPC·RLS 설계는 [T07_AUTH.md](./T07_AUTH.md), 검증 상태는 [T07_CHECKLIST.md](./T07_CHECKLIST.md)를 따른다.
 
