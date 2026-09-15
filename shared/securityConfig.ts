@@ -1,5 +1,6 @@
 export const authSecurityConfig={
  minimumPasswordLength:12,
+ requiredPasswordCharacters:{uppercase:true,lowercase:true,digit:true,symbol:true},
  failedPasswordLimit:5,
  failedPasswordWindowSeconds:5*60,
  accountLockSeconds:5*60,
