@@ -149,3 +149,8 @@
 - 검증: Supabase의 `Successfully updated settings` 알림을 확인하고 페이지 새로고침 뒤에도 CAPTCHA 활성화와 Turnstile 제공자가 유지됨을 확인. `.env`의 Git 제외 상태를 확인했으며 `pnpm run check` 테스트 12개와 `pnpm run build`가 통과.
 - 현재 상태와 다음 작업: Turnstile 서비스와 Supabase CAPTCHA 연결은 완료. 배포 환경 공개 사이트 키 설정, 실제 로그인·가입 토큰 검증, 사용자 소유권 SQL과 비밀번호 훅 적용·시험은 남음.
 - 결정 및 제약: 사용자의 기존 지시대로 Supabase SQL은 실행하지 않음. Turnstile 비밀키 원문은 어디에도 기록하거나 출력하지 않음.
+
+### [2026-09-15] - 과제 7 Supabase 전환 적용
+- 적용: 소유권/RLS 마이그레이션과 로그인 실패 제한 마이그레이션을 Supabase SQL Editor에서 적용했다. 기존 `default` 작업공간을 로그인 계정 소유로 이전하고 `owner_id`를 필수로 전환했다. 실제 사용자 UUID·이메일·키는 기록하지 않는다.
+- 검증: 로그인 실패 제한 테이블·비밀번호 검증 함수·Auth 관리자 권한이 모두 존재함을 확인했다. 자료 이전 뒤 미소유 작업공간 0개, 작업공간 revision 212, revision 이력 212개를 확인했다. 적용 전 개인 백업은 `backups/`의 Git 제외 파일로 보관한다.
+- 다음 작업: Supabase Dashboard에서 Password verification hook을 연결하고, 실제 5회 실패·잠금 중 정상 비밀번호·5분 후 재로그인·계정 두 개 격리를 검증한다.
